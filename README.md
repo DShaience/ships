@@ -1,6 +1,7 @@
 # Ships type classification exercise
 
 Legal Notice:
+
 Please note that the contents of this challenge, including associated code and documentation (the “Assignment
 Materials") are the private and proprietary information of DShaience (the owner of this repository). The Assignment
 Materials are made available to you solely for your personal use in evaluating the assignment, and DShaience
