@@ -14,19 +14,19 @@ def load_and_pickle_data(file_path_csv: str, verbose: bool = True) -> pd.DataFra
     file_path_pickle = file_path_csv.replace('.csv', '.p')
     if os.path.isfile(file_path_pickle):
         if verbose:
-            print(f"Pickle found. \n\tLoading {file_path_pickle} ... ", end="")
+            print(f"Pickle found. Loading {file_path_pickle} ... ", end="")
         df = pickle.load(open(file_path_pickle, "rb"))
         if verbose:
-            print("Done")
+            print("Done. ", end="")
     else:
         if verbose:
-            print(f"Loading raw CSV \n\t{file_path_csv} ... ", end="")
+            print(f"Loading raw CSV {file_path_csv} ... ", end="")
         df = pd.read_csv(file_path_csv)
         if verbose:
             print("Done. Dumping to pickle... ", end="")
         pickle.dump(df, open(file_path_pickle, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
         if verbose:
-            print("Done")
+            print("Done. ", end="")
 
     if verbose:
         print("\tRetuning dataframe")
