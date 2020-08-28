@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import pandas as pd
 import pickle
 import os
@@ -32,3 +34,18 @@ def load_and_pickle_data(file_path_csv: str, verbose: bool = True) -> pd.DataFra
         print("\tRetuning dataframe")
     return df
 
+
+def load_vessels_dataset() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    path_port_visits_train = r'data/port_visits_train.csv'
+    path_vessels_label_train = r'data/vessels_labels_train.csv'
+    path_port_visits_test = r'data/port_visits_test.csv'
+    path_vessels_to_label = r'data/vessels_to_label.csv'
+
+    # when the pickle exists, load from pickle. Otherwise, reads the file, pickles, and loads.
+    # This saves time on rerunning the script
+    df_port_visits_train = load_and_pickle_data(path_port_visits_train)
+    df_vessels_label_train = load_and_pickle_data(path_vessels_label_train)
+    df_port_visits_test = load_and_pickle_data(path_port_visits_test)
+    df_vessels_to_label = load_and_pickle_data(path_vessels_to_label)
+
+    return df_port_visits_train, df_vessels_label_train, df_port_visits_test, df_vessels_to_label
