@@ -37,13 +37,67 @@ class ProfilesTrainCounter:
         self.primary_prof_country = primary_profile_count(df['country'], df[label_colname])
 
 
-def port_visits_features(df: pd.DataFrame):
+class DatasetAndFeatures:
     """
-    :param df: either train of test dataframe. This function is used identically on both.
-    This means this function CANNOT use label (!)
-    :return: the same df, enriched with new features. Also returns the list of features that were added
-    May also add interim columns that help calculations. These are not included in the returned features list
+    This class takes the original port_visits dataframe (Train OR test) and adds feature columns (also adds some interim calculation columns)
     """
+    def __init__(self, df: pd.DataFrame):
+        self.df = df
+        self.vessel_ids_set = set(df['vessel_id'].unique())     # used to easily iterate over vessel_ids
+        self.calc_features()
+
+    def calc_features(self):
+        self.__add_end_time()  # adds the end-time of the vessels stay at the port
+        self.df.sort_values(by='start_time', ascending=True, inplace=True)
+        self.df.reset_index(drop=True, inplace=True)
+        self.calc_vessel_velocity()
+
+    def __add_end_time(self):
+        """
+        :return: adds the end-time of the vessels stay at the port. This is used to calculate vessel velocity
+        """
+        self.df['start_time'] = pd.to_datetime(self.df['start_time'])
+        self.df['end_time'] = self.df['start_time'] + pd.to_timedelta(self.df['duration_min'], unit='min')
+
+    @staticmethod
+    def __calc_haversine_distance_vectorized(lon1, lat1, lon2, lat2) -> float:
+        lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+
+        newlon = lon2 - lon1
+        newlat = lat2 - lat1
+
+        haver_formula = np.sin(newlat / 2.0) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(newlon / 2.0) ** 2
+
+        dist = 2 * np.arcsin(np.sqrt(haver_formula))
+        km = 6367 * dist  # 6367 for distance in KM for miles use 3958
+        return km
+
+    def calc_vessel_velocity(self):
+        """
+        :return: Warp 9. Engage.
+        """
+        default_val = 0
+        self.df['end_time_prev'] = self.df.groupby('vessel_id')['end_time'].shift()
+        self.df['end_time_prev'] = self.df.groupby('vessel_id')['end_time'].shift()
+        self.df['Long_prev'] = self.df.groupby('vessel_id')['Long'].shift()
+        self.df['Lat_prev'] = self.df.groupby('vessel_id')['Lat'].shift()
+
+        self.df['distance'] = 0
+        self.df['travel_time_hours'] = 0
+        cond = ~self.df['Long_prev'].isna()
+        self.df.loc[cond, 'distance_km'] = self.__calc_haversine_distance_vectorized(self.df.loc[cond, 'Long'].values, self.df.loc[cond, 'Lat'].values,
+                                                                                  self.df.loc[cond, 'Long_prev'].values, self.df.loc[cond, 'Lat_prev'].values)
+
+        self.df.loc[cond, 'travel_time_hours'] = (self.df.loc[cond, 'start_time'] - self.df.loc[cond, 'end_time_prev']).astype('timedelta64[h]')
+        self.df[self.df.loc[:, 'travel_time_hours'] < 0]
+        # time diff is: start_time - end_time_prev
+        # fixme: there might be a bug with travel distance and travel_time_hours
+
+
+        self.df.loc[self.df['vessel_id'] == '56db7083e4b0a9ba750395d2', :]
+        # self.df.loc[self.df['vessel_id'] == '56db88d3e4b006198d26506b', :].to_csv('E:/development/blah.csv', index=False)
+        self.df.loc[self.df['vessel_id'] == '56db88d3e4b006198d26506b', :]
+
 
 if __name__ == '__main__':
     # df_port_visits_train, df_vessels_label_train, df_port_visits_test, df_vessels_to_label = load_vessels_dataset()
@@ -55,9 +109,9 @@ if __name__ == '__main__':
 
     profiles_train = ProfilesTrainCounter(df_port_visits_train, label_colname='label')
     #
+    # port_visits_features(df_port_visits_train)
 
-
-
+    train_features_dataset = DatasetAndFeatures(df_port_visits_train)
 
 
 
