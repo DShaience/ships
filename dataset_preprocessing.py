@@ -129,10 +129,12 @@ class DatasetAndFeatures:
         """
         if unique_list:
             primary_vs_list_of_values = self.df.groupby(key_col)[groupby_col].apply(set).apply(list).reset_index()
-            summary_col_names = [f'{key_col}_{col}_unique_count' for col in ['Pos', 'Neg', 'Total']]
+            suffix = 'unique'
         else:
             primary_vs_list_of_values = self.df.groupby(key_col)[groupby_col].apply(list).reset_index()
-            summary_col_names = [f'{key_col}_{col}_count' for col in ['Pos', 'Neg', 'Total']]
+            suffix = ''
+
+        summary_col_names = [f'{key_col}_{col}_count' for col in ['Pos', 'Neg', 'Total']]
 
         # Count per vessel, how much pos/neg/total visits it had by the list of all [groupby_col] it visited (country, port, etc).
         records = [self.profiles.sum_pos_neg_total_for_list_of_keys(primary_profile_dict, list(list_of_values)) for list_of_values in primary_vs_list_of_values[groupby_col].values]
@@ -140,6 +142,8 @@ class DatasetAndFeatures:
         records_as_df = pd.DataFrame.from_records(records, columns=summary_col_names)  # values unpacking in order: #Pos, #Neg, #Total
         # adding vessel-id information
         records_as_df.insert(0, 'vessel_id', primary_vs_list_of_values['vessel_id'])
+        records_as_df['Pos_ratio'] = records_as_df[summary_col_names[0]]/records_as_df[summary_col_names[2]]   # Pos/total ratio
+        self.__add_suffix(records_as_df, summary_col_names + ['Pos_ratio'], suffix)
         return records_as_df
 
     def __add_end_time(self):
@@ -157,8 +161,24 @@ class DatasetAndFeatures:
         :param prefix: prefix to add
         :return: adds prefix to columns cols_list in df
         """
+        if prefix == '':
+            return
         assert set(list(df)).intersection(set(cols_list)) == set(cols_list), f"Some columns in cols_list don't exist in df. Cowardly aborting. df: {set(list(df))} vs cols: {set(cols_list)}"
-        new_names = [(i, f'{prefix}_' + i) for i in cols_list]
+        new_names = [(i, f'{prefix}_{i}') for i in cols_list]
+        df.rename(columns=dict(new_names), inplace=True)
+
+    @staticmethod
+    def __add_suffix(df: pd.DataFrame, cols_list: List[str], suffix: str):
+        """
+        :param df: aggregated features dataframe
+        :param cols_list: list of the aggregated features column names (that is, only the feature, not any meta-data)
+        :param prefix: prefix to add
+        :return: adds prefix to columns cols_list in df
+        """
+        if suffix == '':
+            return
+        assert set(list(df)).intersection(set(cols_list)) == set(cols_list), f"Some columns in cols_list don't exist in df. Cowardly aborting. df: {set(list(df))} vs cols: {set(cols_list)}"
+        new_names = [(i, f'{i}_{suffix}') for i in cols_list]
         df.rename(columns=dict(new_names), inplace=True)
 
     @staticmethod
