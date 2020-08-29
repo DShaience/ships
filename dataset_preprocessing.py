@@ -6,12 +6,21 @@ from typing import List
 from vessels_classes import Quotes
 
 
-class ProfilesTrainCounter:
+class ProfilesCounter:
     """
     This class calculates and holds various entity profiles. For example self.primary_prof_port_id is a dictionary
     of all port_ids with the respective count of Pos, Neg, and Total
     """
     def __init__(self, df: pd.DataFrame, label_colname: str = 'label'):
+        """
+        :param df: train dataframe (profiling uses labels)
+        :param label_colname: label column name
+
+        A profile is a dictionary arranged like so:
+        primary-key: {"Pos": count, "Neg": count, "Total": count}
+        For example, for country "Molvania" (primary key) there's a count of number of POS that ever visited, NEG, and TOTAL
+        In this manner it is possible to profile a country by the frequency, or likelihood, that an oil tanker is visiting there
+        """
         self.primary_prof_port_id = self.__primary_profile_count(df['port_id'], df[label_colname])
         self.primary_prof_port_name = self.__primary_profile_count(df['port_name'], df[label_colname])
         self.primary_prof_country = self.__primary_profile_count(df['country'], df[label_colname])
@@ -40,10 +49,11 @@ class DatasetAndFeatures:
     """
     This class takes the original port_visits dataframe (Train OR test) and adds feature columns (also adds some interim calculation columns)
     """
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: pd.DataFrame, profiles: ProfilesCounter):
         self.df = df
         self.vessel_ids_set = set(df['vessel_id'].unique())     # used to easily iterate over vessel_ids
         self.agg_features_df = None                             # Aggregated features data-frame (aggregated over vessel-id. See "raw features" below)
+        self.profiles = profiles                                # ProfilesCounter. It saves port and country profile data
 
         self.raw_features_colnames: List[str] = []              # keeping track of raw features names (in case I'll add more later)
         # raw features are features before final aggregation. For example, |travel distance| is a raw feature.
@@ -160,10 +170,10 @@ if __name__ == '__main__':
     # cols = ['ves_id', 'start_time', 'duration_min', 'port_id', 'country', 'Lat', 'Long', 'port_name', 'vessel_id', 'type', 'label']
 
     # Calculate profiles
-    profiles_train = ProfilesTrainCounter(df_port_visits_train_merge, label_colname='label')
+    profiles_train = ProfilesCounter(df_port_visits_train_merge, label_colname='label')
 
     # data-set, raw features and aggregatesd features
-    train_features_dataset = DatasetAndFeatures(df_port_visits_train)
+    train_features_dataset = DatasetAndFeatures(df_port_visits_train, profiles_train)
     fun.print_quote()
 
 
