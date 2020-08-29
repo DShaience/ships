@@ -64,8 +64,12 @@ class ProfilesCounter:
         :param list_of_values: values for which to summarize
         :return: pos, neg, total count over the summary of list_of_values
         """
-        pos_count = sum([primary_prof[key]["Pos"] for key in list_of_values if (key is not None) and (str(key) != 'nan')])  # apparently, this is the way to protect against type(nan) = float
-        neg_count = sum([primary_prof[key]["Neg"] for key in list_of_values if (key is not None) and (str(key) != 'nan')])
+        # Protects against profile values that weren't observed during training. Such as Narssarssuaq's port (Not sure if this is misspelled. Wikipedia says "Narsarsuaq" so ¯\_(ツ)_/¯
+        # Also protects against type(nan) = float
+        filtered_list_of_values = [key for key in list_of_values if (key in primary_prof.keys()) and (key is not None) and (str(key) != 'nan')]
+
+        pos_count = sum([primary_prof[key]["Pos"] for key in filtered_list_of_values])
+        neg_count = sum([primary_prof[key]["Neg"] for key in filtered_list_of_values])
         total_count = pos_count + neg_count
         return pos_count, neg_count, total_count
 
