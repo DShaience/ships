@@ -89,17 +89,16 @@ class DatasetAndFeatures:
         cond = ~self.df['end_time_prev'].isna()
         self.df.loc[cond, 'distance_km'] = self.__calc_haversine_distance_vectorized(self.df.loc[cond, 'Long'].values, self.df.loc[cond, 'Lat'].values,
                                                                                      self.df.loc[cond, 'Long_prev'].values, self.df.loc[cond, 'Lat_prev'].values)
+        self.df.loc[cond, 'travel_time_hours'] = (self.df.loc[cond, 'start_time'] - self.df.loc[cond, 'end_time_prev']).astype('timedelta64[s]')/3600
 
-        self.df.loc[cond, 'travel_time_hours'] = (self.df.loc[cond, 'start_time'] - self.df.loc[cond, 'end_time_prev']).astype('timedelta64[h]')
-        self.df[self.df.loc[:, 'travel_time_hours'] < 0]
+
+        # self.df[self.df.loc[:, 'travel_time_hours'] < 0]
         # time diff is: start_time - end_time_prev
-        # fixme: there might be a bug with travel distance and travel_time_hours
 
-
-        self.df.loc[self.df['vessel_id'] == '56db7083e4b0a9ba750395d2', :]
+        # self.df.loc[self.df['vessel_id'] == '56db7083e4b0a9ba750395d2', :]
         # self.df.loc[self.df['vessel_id'] == '56db88d3e4b006198d26506b', :].to_csv('E:/development/blah.csv', index=False)
-        cols_to_inspect = ['Long', 'Lat', 'Long_prev', 'Lat_prev', 'port_name', 'end_time_prev', 'start_time', 'travel_time_hours', 'distance_km']
-        self.df.loc[self.df['vessel_id'] == '56db88d3e4b006198d26506b', cols_to_inspect]
+        # cols_to_inspect = ['Long', 'Lat', 'Long_prev', 'Lat_prev', 'port_name', 'end_time_prev', 'start_time', 'travel_time_hours', 'distance_km']
+        # self.df.loc[self.df['vessel_id'] == '56db88d3e4b006198d26506b', cols_to_inspect]
 
 
 if __name__ == '__main__':
