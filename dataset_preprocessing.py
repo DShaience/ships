@@ -7,24 +7,6 @@ from sklearn.metrics.pairwise import haversine_distances
 from math import radians
 
 
-def primary_profile_count(primary_entity: pd.Series, label: pd.Series) -> dict:
-    """
-    :param primary_entity: pandas series containing categorical items
-    :param label: labels series
-    :return: a special dictionary mapping primary_entity items to Pos, Neg, and Total count
-    """
-    assert len(primary_entity) == len(label), "Primary entity and label must of of equal length. Cowardly aborting"
-    primary_set = primary_entity.unique()
-    neg = Counter(primary_entity[label == 0])
-    pos = Counter(primary_entity[label == 1])
-
-    primary_profile_count_dict = {primary_key: {"Pos": pos[primary_key] if pos[primary_key] else 0,
-                                                "Neg": neg[primary_key] if neg[primary_key] else 0} for primary_key in primary_set}
-    for key in primary_profile_count_dict:
-        primary_profile_count_dict[key]["Total"] = primary_profile_count_dict[key]["Pos"] + primary_profile_count_dict[key]["Neg"]
-
-    return primary_profile_count_dict
-
 
 class ProfilesTrainCounter:
     """
@@ -32,9 +14,28 @@ class ProfilesTrainCounter:
     of all port_ids with the respective count of Pos, Neg, and Total
     """
     def __init__(self, df: pd.DataFrame, label_colname: str = 'label'):
-        self.primary_prof_port_id = primary_profile_count(df['port_id'], df[label_colname])
-        self.primary_prof_port_name = primary_profile_count(df['port_name'], df[label_colname])
-        self.primary_prof_country = primary_profile_count(df['country'], df[label_colname])
+        self.primary_prof_port_id = self.__primary_profile_count(df['port_id'], df[label_colname])
+        self.primary_prof_port_name = self.__primary_profile_count(df['port_name'], df[label_colname])
+        self.primary_prof_country = self.__primary_profile_count(df['country'], df[label_colname])
+
+    @staticmethod
+    def __primary_profile_count(primary_entity: pd.Series, label: pd.Series) -> dict:
+        """
+        :param primary_entity: pandas series containing categorical items
+        :param label: labels series
+        :return: a special dictionary mapping primary_entity items to Pos, Neg, and Total count
+        """
+        assert len(primary_entity) == len(label), "Primary entity and label must of of equal length. Cowardly aborting"
+        primary_set = primary_entity.unique()
+        neg = Counter(primary_entity[label == 0])
+        pos = Counter(primary_entity[label == 1])
+
+        primary_profile_count_dict = {primary_key: {"Pos": pos[primary_key] if pos[primary_key] else 0,
+                                                    "Neg": neg[primary_key] if neg[primary_key] else 0} for primary_key in primary_set}
+        for key in primary_profile_count_dict:
+            primary_profile_count_dict[key]["Total"] = primary_profile_count_dict[key]["Pos"] + primary_profile_count_dict[key]["Neg"]
+
+        return primary_profile_count_dict
 
 
 class DatasetAndFeatures:
