@@ -1,11 +1,8 @@
 import pandas as pd
 import numpy as np
 from helper_functions import load_vessels_dataset
-import featuretools as ft
 from collections import Counter
-from sklearn.metrics.pairwise import haversine_distances
-from math import radians
-
+from typing import List
 
 
 class ProfilesTrainCounter:
@@ -45,13 +42,24 @@ class DatasetAndFeatures:
     def __init__(self, df: pd.DataFrame):
         self.df = df
         self.vessel_ids_set = set(df['vessel_id'].unique())     # used to easily iterate over vessel_ids
-        self.calc_features()
 
-    def calc_features(self):
+        self.raw_features_colnames: List[str] = []
+        # raw features are features before final aggregation. For example, |travel distance| is a raw feature.
+        # The corresponding aggregated feature will be |average-travel-distance|, which is
+        # the average over all distances traveled by the vessel
+
+        raw_features_to_add = self.calc_features()
+        self.raw_features_colnames.extend(raw_features_to_add)
+
+    def calc_features(self) -> List[str]:
+        """
+        :return: returns a list of raw features names
+        """
         self.__add_end_time()  # adds the end-time of the vessels stay at the port
         self.df.sort_values(by='start_time', ascending=True, inplace=True)
         self.df.reset_index(drop=True, inplace=True)
-        self.calc_vessel_velocity()
+        raw_features_to_add = self.__calc_vessel_velocity()
+        return raw_features_to_add
 
     def __add_end_time(self):
         """
@@ -62,7 +70,13 @@ class DatasetAndFeatures:
 
     @staticmethod
     def __calc_haversine_distance_vectorized(lon1, lat1, lon2, lat2) -> float:
-        # lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+        """
+        :param lon1:
+        :param lat1:
+        :param lon2:
+        :param lat2:
+        :return: calculates the distance between two points on the globe using 2 sets of long/lat coordinates
+        """
         lat1, lon1, lat2, lon2 = np.radians([lat1, lon1, lat2, lon2])
 
         newlon = lon2 - lon1
@@ -74,9 +88,11 @@ class DatasetAndFeatures:
         km = 6367 * dist  # 6367 for distance in KM for miles use 3958
         return km
 
-    def calc_vessel_velocity(self):
+    def __calc_vessel_velocity(self) -> List[str]:
         """
         :return: Warp 9. Engage.
+        Creates three raw features: distance, travel-time, and travel velocity
+        returns a list of raw features names
         """
         default_val = 0
         # self.df['end_time_prev'] = self.df.groupby('vessel_id')['end_time'].shift()
@@ -84,21 +100,18 @@ class DatasetAndFeatures:
         self.df['Long_prev'] = self.df.groupby('vessel_id')['Long'].shift()
         self.df['Lat_prev'] = self.df.groupby('vessel_id')['Lat'].shift()
 
+        # Shifting creates NA values in the first sample, where there's no value to shift into.
+        # Post-shift condition excludes these samples from feature calculation
+        post_shift_cond = ~self.df['end_time_prev'].isna()
+        # Create and initialize feature columns to 0
         self.df['distance_km'] = 0
         self.df['travel_time_hours'] = 0
-        cond = ~self.df['end_time_prev'].isna()
-        self.df.loc[cond, 'distance_km'] = self.__calc_haversine_distance_vectorized(self.df.loc[cond, 'Long'].values, self.df.loc[cond, 'Lat'].values,
-                                                                                     self.df.loc[cond, 'Long_prev'].values, self.df.loc[cond, 'Lat_prev'].values)
-        self.df.loc[cond, 'travel_time_hours'] = (self.df.loc[cond, 'start_time'] - self.df.loc[cond, 'end_time_prev']).astype('timedelta64[s]')/3600
-
-
-        # self.df[self.df.loc[:, 'travel_time_hours'] < 0]
-        # time diff is: start_time - end_time_prev
-
-        # self.df.loc[self.df['vessel_id'] == '56db7083e4b0a9ba750395d2', :]
-        # self.df.loc[self.df['vessel_id'] == '56db88d3e4b006198d26506b', :].to_csv('E:/development/blah.csv', index=False)
-        # cols_to_inspect = ['Long', 'Lat', 'Long_prev', 'Lat_prev', 'port_name', 'end_time_prev', 'start_time', 'travel_time_hours', 'distance_km']
-        # self.df.loc[self.df['vessel_id'] == '56db88d3e4b006198d26506b', cols_to_inspect]
+        self.df['travel_velocity_kph'] = 0
+        self.df.loc[post_shift_cond, 'distance_km'] = self.__calc_haversine_distance_vectorized(self.df.loc[post_shift_cond, 'Long'].values, self.df.loc[post_shift_cond, 'Lat'].values,
+                                                                                     self.df.loc[post_shift_cond, 'Long_prev'].values, self.df.loc[post_shift_cond, 'Lat_prev'].values)
+        self.df.loc[post_shift_cond, 'travel_time_hours'] = (self.df.loc[post_shift_cond, 'start_time'] - self.df.loc[post_shift_cond, 'end_time_prev']).astype('timedelta64[s]')/3600
+        self.df.loc[post_shift_cond, 'travel_velocity_kph'] = self.df.loc[post_shift_cond, 'distance_km'] / self.df.loc[post_shift_cond, 'travel_time_hours']
+        return ['distance_km', 'travel_time_hours', 'travel_velocity_kph']
 
 
 if __name__ == '__main__':
@@ -151,105 +164,3 @@ if __name__ == '__main__':
 
 
 
-
-    FEATURETOOLS = False
-    if FEATURETOOLS:
-        # cols = ['ves_id', 'start_time', 'duration_min', 'port_id', 'country', 'Lat', 'Long', 'port_name', 'vessel_id', 'type', 'label']
-        es = ft.EntitySet(id='port_visits')
-
-        es.entity_from_dataframe(entity_id='data', dataframe=df_port_visits_train,
-                                 variable_types={
-                                     'vessel_id': ft.variable_types.Categorical,
-                                     'start_time': ft.variable_types.Datetime,
-                                     'duration_min': ft.variable_types.Numeric,
-                                     'port_id': ft.variable_types.Categorical,
-                                     'country': ft.variable_types.Categorical,
-                                     'Lat': ft.variable_types.Numeric,
-                                     'Long': ft.variable_types.Numeric,
-                                     'port_name': ft.variable_types.Categorical,
-                                     'type': ft.variable_types.Categorical,
-                                     'label': ft.variable_types.Categorical
-                                 },
-                                 make_index=True, index='index',
-                                 time_index='start_time'
-                                 )
-
-        es.normalize_entity(new_entity_id="vessels",
-                            base_entity_id="data",
-                            index="vessel_id")
-        print(es.entity_dict)
-
-        feature_matrix, feature_defs = ft.dfs(entityset=es, target_entity='data',
-                                              trans_primitives=[#'add_numeric', 'multiply_numeric',
-                                                                # 'negate', 'absolute', 'subtract_numeric',
-                                                                'year', 'month', 'week', 'hour'
-                                                                ],
-                                              agg_primitives=['num_unique'],
-                                              groupby_trans_primitives=['diff',
-                                                                        'cum_min', 'cum_max', 'cum_mean',
-                                                                        'time_since_previous'
-                                                                        ],
-                                              ignore_variables={
-                                                  "data": ['index', 'label']
-                                              },
-                                              max_depth=2, verbose=1, n_jobs=-1)
-
-        #
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # np.random.seed(0)  # ensures the same set of random numbers are generated
-    # date = ['2019-01-01'] * 3 + ['2019-01-02'] * 3 + ['2019-01-03'] * 3
-    # var1, var2 = np.random.randn(9), np.random.randn(9) * 20
-    # group = ["group1", "group2", "group3"] * 3  # to assign the groups for the multiple group case
-    #
-    # df_manygrp = pd.DataFrame({"date": date, "group": group, "var1": var1})  # one var, many groups
-    # df_combo = pd.DataFrame({"date": date, "group": group, "var1": var1, "var2": var2})  # many vars, many groups
-    # df_onegrp = df_manygrp[df_manygrp["group"] == "group1"]  # one var, one group
-    #
-    # for d in [df_onegrp, df_manygrp, df_combo]:  # loop to apply the change to both dfs
-    #     d.loc[d.index, "date"] = pd.to_datetime(d['date']).to_list()
-    #     print("Column changed to: ", d.date.dtype.name)
-    #
-    # df_onegrp.set_index(["date"]).shift(1)
-    #
-    # df = df_manygrp.set_index(["date", "group"])
-    # df = df.unstack().shift(1)
-    # df = df.stack(dropna=False)
-    #
-    # df.reset_index().sort_values("group")

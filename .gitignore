@@ -5,3 +5,4 @@ __pycache__/
 dask-worker-space/
 extra_documents/
 !data/*.rar
+scribbles/
