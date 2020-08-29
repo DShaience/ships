@@ -44,6 +44,11 @@ def all_data_files_exists_check(files_list: List[str]):
 
 
 def load_vessels_dataset() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    :return: extract dataset file (if they don't exist).
+    If they exist, pickle them.
+    Finally, return the datasets as dataframes
+    """
     files_list = [r'data/port_visits_train.csv', r'data/vessels_labels_train.csv', r'data/port_visits_test.csv', r'data/vessels_to_label.csv']
     if not all_data_files_exists_check(files_list):
         print("Extracting RAR archive... ", end="")
