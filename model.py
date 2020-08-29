@@ -63,20 +63,15 @@ if __name__ == '__main__':
     fun = Quotes('data/quotes.csv')
     fun.print_quote(add_message="Loading train and test feature objects")
 
-    # todo: in the end remove this and make generating features the default, in all scripts
-    FORCE_GENERATE_DATASET = False
     path_train_features_obj = r'data/train_features_obj.p'
     path_test_features_obj = r'data/test_features_obj.p'
 
     _, df_vessels_label_train, _, _ = load_vessels_dataset()
 
-    if FORCE_GENERATE_DATASET:
-        train_dataset_obj, test_dataset_obj = feature_generation_main()
-        pickle.dump(train_dataset_obj, open(path_train_features_obj, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-        pickle.dump(test_dataset_obj, open(path_test_features_obj, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-    else:
-        train_dataset_obj = pickle.load(open(path_train_features_obj, "rb"))
-        test_dataset_obj = pickle.load(open(path_test_features_obj, "rb"))
+    fun.print_quote("Creating features from datasets")
+    train_dataset_obj, test_dataset_obj = feature_generation_main()
+    pickle.dump(train_dataset_obj, open(path_train_features_obj, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(test_dataset_obj, open(path_test_features_obj, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
 
     train_features_with_label = pd.merge(train_dataset_obj.features_data_set, df_vessels_label_train[['vessel_id', 'label']], how='inner', on='vessel_id')
     col_label = 'label'
