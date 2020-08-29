@@ -132,15 +132,15 @@ if __name__ == '__main__':
     cm_and_classification_report(y_train, y_pred_train, labels=[0, 1])
     cm_and_classification_report(y_holdout, y_pred_holdout, labels=[0, 1])
 
-    fun.print_quote(add_message="ROC Curve train vs hold-out")
+    print("ROC Curve train vs hold-out")
     plot_ROC(y_train, y_pred_proba_train, y_holdout, y_pred_proba_holdout, "ROC Curve train vs holdout")
 
-    fun.print_quote(add_message="Writing final test-set prediction to file")
+    print("Writing final test-set prediction to file")
     y_pred_test = clf.predict(X_test_scaled)
     test_pred_df = pd.DataFrame({"vessel_id": X_test_groups, "y_pred_test": y_pred_test})
     test_pred_df.to_csv('data/vessels_to_label_prediction.csv', index=False)
 
-    fun.print_quote(add_message="That's all folks!")
+    fun.print_quote(add_message="Analysis complete. Goodbye")
 
     """
     Appendices
