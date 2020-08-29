@@ -52,8 +52,6 @@ class ProfilesCounter:
 
         primary_profile_count_dict = {primary_key: {"Pos": pos[primary_key] if pos[primary_key] else 0,
                                                     "Neg": neg[primary_key] if neg[primary_key] else 0} for primary_key in primary_set}
-        # for key in primary_profile_count_dict:
-        #     primary_profile_count_dict[key]["Total"] = primary_profile_count_dict[key]["Pos"] + primary_profile_count_dict[key]["Neg"]
 
         return primary_profile_count_dict
 
@@ -77,13 +75,17 @@ class DatasetAndFeatures:
         self.raw_features_colnames.extend(raw_features_to_add)
         self.raw_features_colnames.append('duration_min')
 
-        # Calc aggregated features
+        # Calculate aggregated features
         self.agg_features_df = self.calc_agg_features()
-        self.calc_profile_features()
+        # Calculate profile-based features (country, port-name)
+        self.profile_features_df = self.calc_profile_features()
+        # Final features dataframe
+        self.features_data_set = pd.merge(self.agg_features_df, self.profile_features_df, how='inner', on=['vessel_id'])
 
     def calc_agg_features(self) -> pd.DataFrame:
         """
         Calculated aggregated features from raw-features data
+        The dataframe includes vessel-id for further merging downstream
         :return:
         """
         agg_mean = self.df.groupby(['vessel_id'])[self.raw_features_colnames].mean().reset_index()
@@ -108,7 +110,13 @@ class DatasetAndFeatures:
         return raw_features_to_add
 
     def calc_profile_features(self) -> pd.DataFrame:
-
+        """
+        :return: aggregated profile features (by country and by port)
+        returns a dataframe consisting of:
+        * Counts of Pos, Neg, Total, Pos/Total ratio for both country and port-name
+        * UNIQUE Counts of Pos, Neg, Total for both country and port-name (that is, the list of vessel destination is unique. Repeating locations are counted only once)
+        * The final dataframe is aggregation of all of them, with vessel-id to be used for indexing/merging later
+        """
         # Counts
         counts_country_df = self.__calc_profile_feature('vessel_id', 'country', self.profiles.primary_prof_country, unique_list=False)
         counts_port_name_df = self.__calc_profile_feature('vessel_id', 'port_name', self.profiles.primary_prof_port_name, unique_list=False)
@@ -122,10 +130,8 @@ class DatasetAndFeatures:
 
         # merge multiple dataframe on vessel_id
         data_frames = [counts_country_df, counts_port_name_df, unique_counts_country_df, unique_counts_port_name_df]
-        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['vessel_id'], how='inner'), data_frames)
-        return df_merged
-
-
+        df_merged_agg_features = reduce(lambda left, right: pd.merge(left, right, on=['vessel_id'], how='inner'), data_frames)
+        return df_merged_agg_features
 
     def __calc_profile_feature(self, key_col: str, groupby_col: str, primary_profile_dict: dict, unique_list: bool = False) -> pd.DataFrame:
         """
@@ -142,7 +148,6 @@ class DatasetAndFeatures:
             primary_vs_list_of_values = self.df.groupby(key_col)[groupby_col].apply(list).reset_index()
             suffix = ''
 
-        # summary_col_names = [f'{key_col}_{col}_count' for col in ['Pos', 'Neg', 'Total']]
         summary_col_names = [f'{groupby_col}_{col}_count' for col in ['Pos', 'Neg', 'Total']]
 
         # Count per vessel, how much pos/neg/total visits it had by the list of all [groupby_col] it visited (country, port, etc).
