@@ -31,11 +31,14 @@ class Quotes(object):
         quote = self.quotes.loc[i, 'quote'].values[0]
         return author, quote
 
-    def print_quote(self):
+    def print_quote(self, add_message: str = ''):
         author, quote = self.get_quote()
         msg = f"\n\"{quote}\", -{author}\n"
-        wrapper = '='*len(msg)
-        print(f"\n{wrapper}\n\"{quote}\", -{author}\n{wrapper}\n")
+        wrapper = '='*(len(msg) + 8)
+        if add_message != '':
+            print(f"\n{wrapper}\n{add_message}\n\t\"{quote}\", -{author}\n{wrapper}\n")
+        else:
+            print(f"\n{wrapper}\n\"{quote}\", -{author}\n{wrapper}\n")
 
 
 class ProfilesCounter:
