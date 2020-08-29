@@ -84,5 +84,38 @@ if __name__ == '__main__':
     df_train = train_features_with_label.iloc[inds_train].copy(deep=True).reset_index(drop=True)
     df_cv = train_features_with_label.iloc[inds_cv].copy(deep=True).reset_index(drop=True)
 
-
+    # Preparing data for classifier
+    X_train = df_train[features_col_names].copy(deep=True)
+    X_train_groups = df_train[col_id].values
+    scaler = StandardScaler()
+    scaler.fit(X_train)
+    X_train_scaled = scaler.transform(X_train)
+    X_cv_scaled = scaler.transform(df_cv[features_col_names])
+    y_train = df_train[col_label].values
+    y_cv = df_cv[col_label].values
     print("")
+
+    # K-Fold, using group-k-fold by patient-id
+    group_kfold = GroupKFold(n_splits=6)
+    cv = list(group_kfold.split(df_train[features_col_names], df_train[col_label], df_train[col_id]))
+
+    # Model and grid-search
+    t0 = datetime.now()
+    # model, tuned_parameters = get_model_and_tuned_params(model_name='LogisticRegression')
+    # model, tuned_parameters = get_model_and_tuned_params(model_name='RandomForest')
+    model, tuned_parameters = get_model_and_tuned_params(model_name='AdaBoost')
+    gs = GridSearchCV(model, tuned_parameters, scoring='f1_macro', n_jobs=-1, cv=cv, refit=True, verbose=1)
+    gs.fit(X_train_scaled, y_train, groups=X_train_groups)
+    best_idx = gs.best_index_
+    clf = gs.best_estimator_
+    print("Time to complete grid-search: %s seconds" % (datetime.now() - t0).total_seconds())
+    print(f"\nBest estimator params:\n\tParams: {gs.best_params_}\n\tBest Score: {gs.best_score_}\n")
+    print(f"GridSearch mean-test-score: {gs.cv_results_['mean_test_score'][best_idx]}")
+    print(f"GridSearch std-test-score: {gs.cv_results_['std_test_score'][best_idx]}")
+
+    # Prediction and voting
+    y_pred_cv = clf.predict(X_cv_scaled)
+    # Grouping patients together. The final prediction for each patient is by voting (most frequent predicted class)
+    # df_per_patient_grouped_final = per_patient_result(df_cv, col_uid, col_target, y_pred_cv)
+    cm_and_classification_report(y_train, y_pred_cv, labels=[0, 1])
+
