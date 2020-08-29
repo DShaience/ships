@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from helper_functions import load_vessels_dataset
 from collections import Counter
-from typing import List
+from typing import List, Tuple
 from vessels_classes import Quotes
 
 
@@ -24,6 +24,18 @@ class ProfilesCounter:
         self.primary_prof_port_id = self.__primary_profile_count(df['port_id'], df[label_colname])
         self.primary_prof_port_name = self.__primary_profile_count(df['port_name'], df[label_colname])
         self.primary_prof_country = self.__primary_profile_count(df['country'], df[label_colname])
+
+    @staticmethod
+    def sum_pos_neg_total_for_list_of_keys(primary_prof: dict, list_of_values: List[str]) -> Tuple[int, int, int]:
+        """
+        :param primary_prof: one of the calculated profiles
+        :param list_of_values: values for which to summarize
+        :return: pos, neg, total count over the summary of list_of_values
+        """
+        pos_count = sum([primary_prof[key]["Pos"] for key in list_of_values if (key is not None) and (str(key) != 'nan')])  # apparently, this is the way to protect against type(nan) = float
+        neg_count = sum([primary_prof[key]["Neg"] for key in list_of_values if (key is not None) and (str(key) != 'nan')])
+        total_count = pos_count + neg_count
+        return pos_count, neg_count, total_count
 
     @staticmethod
     def __primary_profile_count(primary_entity: pd.Series, label: pd.Series) -> dict:
