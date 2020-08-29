@@ -1,6 +1,7 @@
-data/
+data/*
 .idea/
 venv/
 __pycache__/
 dask-worker-space/
 extra_documents/
+!data/*.rar
