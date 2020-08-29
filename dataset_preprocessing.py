@@ -43,16 +43,49 @@ class DatasetAndFeatures:
     def __init__(self, df: pd.DataFrame):
         self.df = df
         self.vessel_ids_set = set(df['vessel_id'].unique())     # used to easily iterate over vessel_ids
+        self.agg_features_df = None                             # Aggregated features data-frame (aggregated over vessel-id. See "raw features" below)
 
-        self.raw_features_colnames: List[str] = []
+        self.raw_features_colnames: List[str] = []              # keeping track of raw features names (in case I'll add more later)
         # raw features are features before final aggregation. For example, |travel distance| is a raw feature.
         # The corresponding aggregated feature will be |average-travel-distance|, which is
         # the average over all distances traveled by the vessel
 
-        raw_features_to_add = self.calc_features()
+        raw_features_to_add = self.calc_raw_features()
         self.raw_features_colnames.extend(raw_features_to_add)
+        self.raw_features_colnames.append('duration_min')
 
-    def calc_features(self) -> List[str]:
+        # Calc aggregated features
+        self.agg_features_df = self.calc_agg_features()
+
+    @staticmethod
+    def __add_prefix(df: pd.DataFrame, cols_list: List[str], prefix: str):
+        """
+        :param df: aggregated features dataframe
+        :param cols_list: list of the aggregated features column names (that is, only the feature, not any meta-data)
+        :param prefix: prefix to add
+        :return: adds prefix to columns cols_list in df
+        """
+        assert set(list(df)).intersection(set(cols_list)) == set(cols_list), f"Some columns in cols_list don't exist in df. Cowardly aborting. df: {set(list(df))} vs cols: {set(cols_list)}"
+        new_names = [(i, f'{prefix}_' + i) for i in cols_list]
+        df.rename(columns=dict(new_names), inplace=True)
+
+    def calc_agg_features(self) -> pd.DataFrame:
+        """
+        Calculated aggregated features from raw-features data
+        :return:
+        """
+        agg_mean = self.df.groupby(['vessel_id'])[self.raw_features_colnames].mean().reset_index()
+        agg_std = self.df.groupby(['vessel_id'])[self.raw_features_colnames].std().reset_index()
+        # Some STDs are NaN. Replacing them with 0
+        [agg_std[feature].fillna(0.0, inplace=True) for feature in self.raw_features_colnames]
+
+        self.__add_prefix(agg_mean, self.raw_features_colnames, 'mean')
+        self.__add_prefix(agg_std, self.raw_features_colnames, 'std')
+
+        agg_features_df = pd.merge(agg_mean, agg_std, on=['vessel_id'], how='inner')
+        return agg_features_df
+
+    def calc_raw_features(self) -> List[str]:
         """
         :return: returns a list of raw features names
         """
@@ -126,8 +159,10 @@ if __name__ == '__main__':
     df_port_visits_train_merge = pd.merge(df_port_visits_train, df_vessels_label_train, how='left', left_on='vessel_id', right_on='vessel_id')
     # cols = ['ves_id', 'start_time', 'duration_min', 'port_id', 'country', 'Lat', 'Long', 'port_name', 'vessel_id', 'type', 'label']
 
+    # Calculate profiles
     profiles_train = ProfilesTrainCounter(df_port_visits_train_merge, label_colname='label')
 
+    # data-set, raw features and aggregatesd features
     train_features_dataset = DatasetAndFeatures(df_port_visits_train)
     fun.print_quote()
 
@@ -160,10 +195,6 @@ if __name__ == '__main__':
 
 
 
-
-
-
-
-
-
-
+# [agg_std[feature].fillna(agg_std[feature].median(), inplace=True) for feature in self.raw_features_colnames]
+# print(raw_feature)
+# self.df.loc[self.df['vessel_id'] == '577433cae8760d63a5c01356', raw_feature]
