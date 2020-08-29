@@ -113,23 +113,20 @@ class DatasetAndFeatures:
         self.df.loc[post_shift_cond, 'travel_time_hours'] = (self.df.loc[post_shift_cond, 'start_time'] - self.df.loc[post_shift_cond, 'end_time_prev']).astype('timedelta64[s]')/3600
         self.df.loc[post_shift_cond, 'travel_velocity_kph'] = self.df.loc[post_shift_cond, 'distance_km'] / self.df.loc[post_shift_cond, 'travel_time_hours']
 
-
         return ['distance_km', 'travel_time_hours', 'travel_velocity_kph']
 
 
 if __name__ == '__main__':
     fun = Quotes(pd.read_csv('data/quotes.csv'))
     fun.print_quote()
-    # df_port_visits_train, df_vessels_label_train, df_port_visits_test, df_vessels_to_label = load_vessels_dataset()
+    # df_port_visits_train_merge, df_vessels_label_train, df_port_visits_test, df_vessels_to_label = load_vessels_dataset()
     df_port_visits_train, df_vessels_label_train, _, _ = load_vessels_dataset()  # to avoid using unfortunate typos for now
 
     # Adding label
-    df_port_visits_train = pd.merge(df_port_visits_train, df_vessels_label_train, how='left', left_on='ves_id', right_on='vessel_id')
+    df_port_visits_train_merge = pd.merge(df_port_visits_train, df_vessels_label_train, how='left', left_on='vessel_id', right_on='vessel_id')
     # cols = ['ves_id', 'start_time', 'duration_min', 'port_id', 'country', 'Lat', 'Long', 'port_name', 'vessel_id', 'type', 'label']
 
-    profiles_train = ProfilesTrainCounter(df_port_visits_train, label_colname='label')
-    #
-    # port_visits_features(df_port_visits_train)
+    profiles_train = ProfilesTrainCounter(df_port_visits_train_merge, label_colname='label')
 
     train_features_dataset = DatasetAndFeatures(df_port_visits_train)
     fun.print_quote()
