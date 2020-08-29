@@ -4,7 +4,7 @@ from functools import reduce
 from helper_functions import load_vessels_dataset
 from collections import Counter
 from typing import List, Tuple
-from vessels_classes import Quotes
+from vessels_classes import QuotesSingleton
 
 
 class ProfilesCounter:
@@ -243,7 +243,8 @@ class DatasetAndFeatures:
 
 
 if __name__ == '__main__':
-    fun = Quotes(pd.read_csv('data/quotes.csv'))
+    # fun = Quotes(pd.read_csv('data/quotes.csv'))
+    fun = QuotesSingleton('data/quotes.csv')
     fun.print_quote()
     # df_port_visits_train_merge, df_vessels_label_train, df_port_visits_test, df_vessels_to_label = load_vessels_dataset()
     df_port_visits_train, df_vessels_label_train, _, _ = load_vessels_dataset()  # to avoid using unfortunate typos for now
