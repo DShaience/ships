@@ -78,18 +78,7 @@ class DatasetAndFeatures:
 
         # Calc aggregated features
         self.agg_features_df = self.calc_agg_features()
-
-    @staticmethod
-    def __add_prefix(df: pd.DataFrame, cols_list: List[str], prefix: str):
-        """
-        :param df: aggregated features dataframe
-        :param cols_list: list of the aggregated features column names (that is, only the feature, not any meta-data)
-        :param prefix: prefix to add
-        :return: adds prefix to columns cols_list in df
-        """
-        assert set(list(df)).intersection(set(cols_list)) == set(cols_list), f"Some columns in cols_list don't exist in df. Cowardly aborting. df: {set(list(df))} vs cols: {set(cols_list)}"
-        new_names = [(i, f'{prefix}_' + i) for i in cols_list]
-        df.rename(columns=dict(new_names), inplace=True)
+        self.calc_profile_features()
 
     def calc_agg_features(self) -> pd.DataFrame:
         """
@@ -117,12 +106,53 @@ class DatasetAndFeatures:
         raw_features_to_add = self.__calc_vessel_velocity()
         return raw_features_to_add
 
+    def calc_profile_features(self):
+
+        country_counts_df = self.__calc_profile_feature('vessel_id', 'country', self.profiles.primary_prof_country, unique_list=False)
+        #         self.primary_prof_port_id = self.__primary_profile_count(df['port_id'], df[label_colname])
+        #         self.primary_prof_port_name = self.__primary_profile_count(df['port_name'], df[label_colname])
+        #         self.primary_prof_country = self.__primary_profile_count(df['country'], df[label_colname])
+
+    def __calc_profile_feature(self, key_col: str, groupby_col: str, primary_profile_dict: dict, unique_list: bool = False) -> pd.DataFrame:
+        """
+        :param key_col: primary key
+        :param groupby_col: group-by key
+        :param primary_profile_dict: the corresponding profile dictionary mapping groupby_col values to Pos, Neg and Total counts
+        :param unique_list: return a unique list or not
+        :return:
+        """
+        if unique_list:
+            primary_vs_list_of_values = self.df.groupby(key_col)[groupby_col].apply(set).apply(list).reset_index()
+            summary_col_names = [f'{key_col}_{col}_unique_count' for col in ['Pos', 'Neg', 'Total']]
+        else:
+            primary_vs_list_of_values = self.df.groupby(key_col)[groupby_col].apply(list).reset_index()
+            summary_col_names = [f'{key_col}_{col}_count' for col in ['Pos', 'Neg', 'Total']]
+
+        # Count per vessel, how much pos/neg/total visits it had by the list of all [groupby_col] it visited (country, port, etc).
+        records = [self.profiles.sum_pos_neg_total_for_list_of_keys(primary_profile_dict, list(list_of_values)) for list_of_values in primary_vs_list_of_values[groupby_col].values]
+
+        # primary_vs_list_of_values[summary_col_names] = pd.DataFrame.from_records(records)  # values unpacking in order: #Pos, #Neg, #Total
+        # pd.DataFrame.from_records(data, columns =['Team', 'Age', 'Score'])
+        return pd.DataFrame.from_records(records, columns=summary_col_names)  # values unpacking in order: #Pos, #Neg, #Total
+
     def __add_end_time(self):
         """
         :return: adds the end-time of the vessels stay at the port. This is used to calculate vessel velocity
         """
         self.df['start_time'] = pd.to_datetime(self.df['start_time'])
         self.df['end_time'] = self.df['start_time'] + pd.to_timedelta(self.df['duration_min'], unit='min')
+
+    @staticmethod
+    def __add_prefix(df: pd.DataFrame, cols_list: List[str], prefix: str):
+        """
+        :param df: aggregated features dataframe
+        :param cols_list: list of the aggregated features column names (that is, only the feature, not any meta-data)
+        :param prefix: prefix to add
+        :return: adds prefix to columns cols_list in df
+        """
+        assert set(list(df)).intersection(set(cols_list)) == set(cols_list), f"Some columns in cols_list don't exist in df. Cowardly aborting. df: {set(list(df))} vs cols: {set(cols_list)}"
+        new_names = [(i, f'{prefix}_' + i) for i in cols_list]
+        df.rename(columns=dict(new_names), inplace=True)
 
     @staticmethod
     def __calc_haversine_distance_vectorized(lon1, lat1, lon2, lat2) -> float:
