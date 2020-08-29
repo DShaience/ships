@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from functools import reduce
 from helper_functions import load_vessels_dataset
 from collections import Counter
 from typing import List, Tuple
@@ -106,7 +107,7 @@ class DatasetAndFeatures:
         raw_features_to_add = self.__calc_vessel_velocity()
         return raw_features_to_add
 
-    def calc_profile_features(self):
+    def calc_profile_features(self) -> pd.DataFrame:
 
         # Counts
         counts_country_df = self.__calc_profile_feature('vessel_id', 'country', self.profiles.primary_prof_country, unique_list=False)
@@ -118,7 +119,13 @@ class DatasetAndFeatures:
         # EDA showed that port-id and port-name are exactly 1:1, so I removed the port-id profile from calculation
         # counts_port_id_df = self.__calc_profile_feature('vessel_id', 'port_id', self.profiles.primary_prof_port_id, unique_list=False)
         # unique_counts_port_id_df = self.__calc_profile_feature('vessel_id', 'port_id', self.profiles.primary_prof_port_id, unique_list=True)
-        print("")
+
+        # merge multiple dataframe on vessel_id
+        data_frames = [counts_country_df, counts_port_name_df, unique_counts_country_df, unique_counts_port_name_df]
+        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['vessel_id'], how='inner'), data_frames)
+        return df_merged
+
+
 
     def __calc_profile_feature(self, key_col: str, groupby_col: str, primary_profile_dict: dict, unique_list: bool = False) -> pd.DataFrame:
         """
@@ -135,7 +142,8 @@ class DatasetAndFeatures:
             primary_vs_list_of_values = self.df.groupby(key_col)[groupby_col].apply(list).reset_index()
             suffix = ''
 
-        summary_col_names = [f'{key_col}_{col}_count' for col in ['Pos', 'Neg', 'Total']]
+        # summary_col_names = [f'{key_col}_{col}_count' for col in ['Pos', 'Neg', 'Total']]
+        summary_col_names = [f'{groupby_col}_{col}_count' for col in ['Pos', 'Neg', 'Total']]
 
         # Count per vessel, how much pos/neg/total visits it had by the list of all [groupby_col] it visited (country, port, etc).
         records = [self.profiles.sum_pos_neg_total_for_list_of_keys(primary_profile_dict, list(list_of_values)) for list_of_values in primary_vs_list_of_values[groupby_col].values]
@@ -143,8 +151,8 @@ class DatasetAndFeatures:
         records_as_df = pd.DataFrame.from_records(records, columns=summary_col_names)  # values unpacking in order: #Pos, #Neg, #Total
         # adding vessel-id information
         records_as_df.insert(0, 'vessel_id', primary_vs_list_of_values['vessel_id'])
-        records_as_df['Pos_ratio'] = records_as_df[summary_col_names[0]]/records_as_df[summary_col_names[2]]   # Pos/total ratio
-        self.__add_suffix(records_as_df, summary_col_names + ['Pos_ratio'], suffix)
+        records_as_df[f'Pos_ratio_{groupby_col}'] = records_as_df[summary_col_names[0]]/records_as_df[summary_col_names[2]]   # Pos/total ratio
+        self.__add_suffix(records_as_df, summary_col_names + [f'Pos_ratio_{groupby_col}'], suffix)
         return records_as_df
 
     def __add_end_time(self):
