@@ -11,3 +11,8 @@ expertise, are provided in reliance upon your understanding and consent not to u
 publish or otherwise disclose them, except for the purpose of evaluating the assignment. I wish you good
 luck and a great experience!
 
+## Practival notes
+
+In order to clone this repository you must use the RAR dataset enclosed within. This is due to minor renaming adjustments of the ves_id/vessel_id column.
+Also, please make sure you have an UNRAR capable utility installed for pyunpack/patool to use.
+Alternatively, you may manually extract the contents of the data.rar to data/ directory

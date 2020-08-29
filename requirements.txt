@@ -7,3 +7,5 @@ seaborn~=0.10.1
 matplotlib~=3.3.1
 featuretools~=0.18.1
 scikit-learn~=0.23.2
+pyunpack~=0.2.1
+patool~=1.12

@@ -1,8 +1,8 @@
-from typing import Tuple
-
+from typing import Tuple, List
 import pandas as pd
 import pickle
 import os
+from pyunpack import Archive
 
 
 def load_and_pickle_data(file_path_csv: str, verbose: bool = True) -> pd.DataFrame:
@@ -35,7 +35,22 @@ def load_and_pickle_data(file_path_csv: str, verbose: bool = True) -> pd.DataFra
     return df
 
 
+def all_data_files_exists_check(files_list: List[str]):
+    """
+    :param files_list: list of files to validate
+    :return: True if all files exist. False otherwise
+    """
+    return all([os.path.isfile(file) for file in files_list])
+
+
 def load_vessels_dataset() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    files_list = [r'data/port_visits_train.csv', r'data/vessels_labels_train.csv', r'data/port_visits_test.csv', r'data/vessels_to_label.csv']
+    if not all_data_files_exists_check(files_list):
+        print("Extracting RAR archive... ", end="")
+        rar_path = r'data/data.rar'
+        Archive(rar_path).extractall('data/')
+        print("Done. ")
+
     path_port_visits_train = r'data/port_visits_train.csv'
     path_vessels_label_train = r'data/vessels_labels_train.csv'
     path_port_visits_test = r'data/port_visits_test.csv'
