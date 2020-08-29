@@ -2,7 +2,24 @@ import pandas as pd
 import numpy as np
 from helper_functions import load_vessels_dataset
 from collections import Counter
-from typing import List
+from typing import List, Tuple
+
+
+class Quotes:
+    def __init__(self, df: pd.DataFrame):
+        self.quotes = df  # expects columns ['author', 'quote']
+        # self.randomState = np.random.RandomState(972)
+        self.randomState = np.random.RandomState()
+
+    def get_quote(self) -> Tuple[str, str]:
+        i = self.randomState.randint(0, len(self.quotes), 1)
+        author = self.quotes.loc[i, 'author'].values[0]
+        quote = self.quotes.loc[i, 'quote'].values[0]
+        return author, quote
+
+    def print_quote(self):
+        author, quote = self.get_quote()
+        print(f"\n\"{quote}\", -{author}\n")
 
 
 class ProfilesTrainCounter:
@@ -111,10 +128,14 @@ class DatasetAndFeatures:
                                                                                      self.df.loc[post_shift_cond, 'Long_prev'].values, self.df.loc[post_shift_cond, 'Lat_prev'].values)
         self.df.loc[post_shift_cond, 'travel_time_hours'] = (self.df.loc[post_shift_cond, 'start_time'] - self.df.loc[post_shift_cond, 'end_time_prev']).astype('timedelta64[s]')/3600
         self.df.loc[post_shift_cond, 'travel_velocity_kph'] = self.df.loc[post_shift_cond, 'distance_km'] / self.df.loc[post_shift_cond, 'travel_time_hours']
+
+
         return ['distance_km', 'travel_time_hours', 'travel_velocity_kph']
 
 
 if __name__ == '__main__':
+    fun = Quotes(pd.read_csv('data/quotes.csv'))
+    fun.print_quote()
     # df_port_visits_train, df_vessels_label_train, df_port_visits_test, df_vessels_to_label = load_vessels_dataset()
     df_port_visits_train, df_vessels_label_train, _, _ = load_vessels_dataset()  # to avoid using unfortunate typos for now
 
@@ -127,6 +148,7 @@ if __name__ == '__main__':
     # port_visits_features(df_port_visits_train)
 
     train_features_dataset = DatasetAndFeatures(df_port_visits_train)
+    fun.print_quote()
 
 
 
