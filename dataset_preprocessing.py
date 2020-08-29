@@ -51,8 +51,8 @@ class ProfilesCounter:
 
         primary_profile_count_dict = {primary_key: {"Pos": pos[primary_key] if pos[primary_key] else 0,
                                                     "Neg": neg[primary_key] if neg[primary_key] else 0} for primary_key in primary_set}
-        for key in primary_profile_count_dict:
-            primary_profile_count_dict[key]["Total"] = primary_profile_count_dict[key]["Pos"] + primary_profile_count_dict[key]["Neg"]
+        # for key in primary_profile_count_dict:
+        #     primary_profile_count_dict[key]["Total"] = primary_profile_count_dict[key]["Pos"] + primary_profile_count_dict[key]["Neg"]
 
         return primary_profile_count_dict
 
