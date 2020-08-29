@@ -4,11 +4,13 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import ShuffleSplit, GridSearchCV
+from sklearn.model_selection import ShuffleSplit, GridSearchCV, GroupShuffleSplit
 from typing import List
 import numpy as np
 from dataset_preprocessing import feature_generation_main
 import seaborn as sns
+
+from helper_functions import load_vessels_dataset
 from report_function import cm_and_classification_report, feature_importance_estimate
 from vessels_classes import Quotes
 
@@ -52,9 +54,12 @@ if __name__ == '__main__':
     fun = Quotes('data/quotes.csv')
     fun.print_quote(add_message="Loading train and test feature objects")
 
-    FORCE_GENERATE_DATASET = True
+    # todo: in the end remove this and make generating features the default, in all scripts
+    FORCE_GENERATE_DATASET = False
     path_train_features_obj = r'data/train_features_obj.p'
     path_test_features_obj = r'data/test_features_obj.p'
+
+    _, df_vessels_label_train, _, _ = load_vessels_dataset()
 
     if FORCE_GENERATE_DATASET:
         train_dataset_obj, test_dataset_obj = feature_generation_main()
@@ -62,5 +67,22 @@ if __name__ == '__main__':
         pickle.dump(test_dataset_obj, open(path_test_features_obj, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
     else:
         train_dataset_obj = pickle.load(open(path_train_features_obj, "rb"))
-        path_test_features_obj = pickle.load(open(path_test_features_obj, "rb"))
+        test_dataset_obj = pickle.load(open(path_test_features_obj, "rb"))
 
+    train_features_with_label = pd.merge(train_dataset_obj.features_data_set, df_vessels_label_train[['vessel_id', 'label']], how='inner', on='vessel_id')
+    col_label = 'label'
+    col_id = 'vessel_id'
+    features_col_names = [col for col in list(train_features_with_label) if col not in [col_id, col_label]]
+
+    feature_importance_df = feature_importance_estimate(train_features_with_label[features_col_names], train_features_with_label[col_label])
+    # top_important_features = feature_importance_df['Feature'].values[0:20]  # Top 20 most important features
+    print(feature_importance_df.to_string())
+
+    rs_vessels_sampling = np.random.RandomState(90210)  # random-state for vessels sampling
+    # Splitting train and test, by group (using random state for reproducibility)
+    inds_train, inds_cv = next(GroupShuffleSplit(test_size=.30, n_splits=1, random_state=90210).split(train_features_with_label, groups=train_features_with_label[col_id]))
+    df_train = train_features_with_label.iloc[inds_train].copy(deep=True).reset_index(drop=True)
+    df_cv = train_features_with_label.iloc[inds_cv].copy(deep=True).reset_index(drop=True)
+
+
+    print("")
