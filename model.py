@@ -36,42 +36,43 @@ def get_model_and_tuned_params(model_name: str):
         model = RandomForestClassifier(random_state=90210)
     elif model_name.lower() == 'AdaBoost'.lower():
         model = AdaBoostClassifier(DecisionTreeClassifier())
-        # tuned_parameters = [{"base_estimator__criterion": ["gini"],
-        #                      "base_estimator__splitter": ["best"],
-        #                      'base_estimator__max_depth': [3],
-        #                      'base_estimator__min_samples_leaf': [10],
-        #                      'base_estimator__class_weight': [{0: 1, 1: 1}],
-        #                      "n_estimators": [20, 30],
-        #                      "random_state": [90210],
-        #                      'learning_rate': [0.01, 0.05]
-        #                      }]
         tuned_parameters = [{"base_estimator__criterion": ["gini"],
                              "base_estimator__splitter": ["best"],
-                             'base_estimator__max_depth': [3, 4],
-                             'base_estimator__min_samples_leaf': [10, 20, 30],
-                             'base_estimator__class_weight': [{0: 1, 1: 1}, {0: 1, 1: 2}],
+                             'base_estimator__max_depth': [3],
+                             'base_estimator__min_samples_leaf': [10],
+                             'base_estimator__class_weight': [{0: 1, 1: 1}],
                              "n_estimators": [20, 30],
                              "random_state": [90210],
-                             'learning_rate': [0.01, 0.05, 0.1]
+                             'learning_rate': [0.01, 0.05]
                              }]
+        # tuned_parameters = [{"base_estimator__criterion": ["gini"],
+        #                      "base_estimator__splitter": ["best"],
+        #                      'base_estimator__max_depth': [3, 4],
+        #                      'base_estimator__min_samples_leaf': [10, 20, 30],
+        #                      'base_estimator__class_weight': [{0: 1, 1: 1}, {0: 1, 1: 2}],
+        #                      "n_estimators": [20, 30],
+        #                      "random_state": [90210],
+        #                      'learning_rate': [0.01, 0.05, 0.1]
+        #                      }]
     else:
         raise ValueError("Unsupported classifier type. Cowardly aborting")
     return model, tuned_parameters
 
 
 if __name__ == '__main__':
-    fun = Quotes('data/quotes.csv')
-    fun.print_quote(add_message="Loading train and test feature objects")
+    print("Loading train and test feature objects")
 
     path_train_features_obj = r'data/train_features_obj.p'
     path_test_features_obj = r'data/test_features_obj.p'
 
     _, df_vessels_label_train, _, _ = load_vessels_dataset()
 
-    fun.print_quote("Creating features from datasets")
+    print("Creating features from datasets")
     train_dataset_obj, test_dataset_obj = feature_generation_main()
     pickle.dump(train_dataset_obj, open(path_train_features_obj, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
     pickle.dump(test_dataset_obj, open(path_test_features_obj, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+    fun = Quotes('data/quotes.csv')
+    fun.print_quote("Finished creating features")
 
     train_features_with_label = pd.merge(train_dataset_obj.features_data_set, df_vessels_label_train[['vessel_id', 'label']], how='inner', on='vessel_id')
     col_label = 'label'
