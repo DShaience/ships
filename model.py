@@ -36,24 +36,24 @@ def get_model_and_tuned_params(model_name: str):
         model = RandomForestClassifier(random_state=90210)
     elif model_name.lower() == 'AdaBoost'.lower():
         model = AdaBoostClassifier(DecisionTreeClassifier())
-        tuned_parameters = [{"base_estimator__criterion": ["gini"],
-                             "base_estimator__splitter": ["best"],
-                             'base_estimator__max_depth': [3],
-                             'base_estimator__min_samples_leaf': [10],
-                             'base_estimator__class_weight': [{0: 1, 1: 1}],
-                             "n_estimators": [20, 30],
-                             "random_state": [90210],
-                             'learning_rate': [0.01, 0.05]
-                             }]
         # tuned_parameters = [{"base_estimator__criterion": ["gini"],
         #                      "base_estimator__splitter": ["best"],
-        #                      'base_estimator__max_depth': [3, 4],
-        #                      'base_estimator__min_samples_leaf': [10, 20, 30],
-        #                      'base_estimator__class_weight': [{0: 1, 1: 1}, {0: 1, 1: 2}],
+        #                      'base_estimator__max_depth': [3],
+        #                      'base_estimator__min_samples_leaf': [10],
+        #                      'base_estimator__class_weight': [{0: 1, 1: 1}],
         #                      "n_estimators": [20, 30],
         #                      "random_state": [90210],
-        #                      'learning_rate': [0.01, 0.05, 0.1]
+        #                      'learning_rate': [0.01, 0.05]
         #                      }]
+        tuned_parameters = [{"base_estimator__criterion": ["gini"],
+                             "base_estimator__splitter": ["best"],
+                             'base_estimator__max_depth': [3, 4],
+                             'base_estimator__min_samples_leaf': [10, 20, 30],
+                             'base_estimator__class_weight': [{0: 1, 1: 1}, {0: 1, 1: 2}],
+                             "n_estimators": [20, 30],
+                             "random_state": [90210],
+                             'learning_rate': [0.01, 0.05, 0.1]
+                             }]
     else:
         raise ValueError("Unsupported classifier type. Cowardly aborting")
     return model, tuned_parameters
