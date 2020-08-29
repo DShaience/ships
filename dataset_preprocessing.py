@@ -110,14 +110,15 @@ class DatasetAndFeatures:
 
         # Counts
         counts_country_df = self.__calc_profile_feature('vessel_id', 'country', self.profiles.primary_prof_country, unique_list=False)
-        counts_port_id_df = self.__calc_profile_feature('vessel_id', 'port_id', self.profiles.primary_prof_port_id, unique_list=False)
         counts_port_name_df = self.__calc_profile_feature('vessel_id', 'port_name', self.profiles.primary_prof_port_name, unique_list=False)
         # Unique counts
         unique_counts_country_df = self.__calc_profile_feature('vessel_id', 'country', self.profiles.primary_prof_country, unique_list=True)
-        unique_counts_port_id_df = self.__calc_profile_feature('vessel_id', 'port_id', self.profiles.primary_prof_port_id, unique_list=True)
         unique_counts_port_name_df = self.__calc_profile_feature('vessel_id', 'port_name', self.profiles.primary_prof_port_name, unique_list=True)
 
-
+        # EDA showed that port-id and port-name are exactly 1:1, so I removed the port-id profile from calculation
+        # counts_port_id_df = self.__calc_profile_feature('vessel_id', 'port_id', self.profiles.primary_prof_port_id, unique_list=False)
+        # unique_counts_port_id_df = self.__calc_profile_feature('vessel_id', 'port_id', self.profiles.primary_prof_port_id, unique_list=True)
+        print("")
 
     def __calc_profile_feature(self, key_col: str, groupby_col: str, primary_profile_dict: dict, unique_list: bool = False) -> pd.DataFrame:
         """
