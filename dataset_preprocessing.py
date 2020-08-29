@@ -108,10 +108,16 @@ class DatasetAndFeatures:
 
     def calc_profile_features(self):
 
-        country_counts_df = self.__calc_profile_feature('vessel_id', 'country', self.profiles.primary_prof_country, unique_list=False)
-        #         self.primary_prof_port_id = self.__primary_profile_count(df['port_id'], df[label_colname])
-        #         self.primary_prof_port_name = self.__primary_profile_count(df['port_name'], df[label_colname])
-        #         self.primary_prof_country = self.__primary_profile_count(df['country'], df[label_colname])
+        # Counts
+        counts_country_df = self.__calc_profile_feature('vessel_id', 'country', self.profiles.primary_prof_country, unique_list=False)
+        counts_port_id_df = self.__calc_profile_feature('vessel_id', 'port_id', self.profiles.primary_prof_port_id, unique_list=False)
+        counts_port_name_df = self.__calc_profile_feature('vessel_id', 'port_name', self.profiles.primary_prof_port_name, unique_list=False)
+        # Unique counts
+        unique_counts_country_df = self.__calc_profile_feature('vessel_id', 'country', self.profiles.primary_prof_country, unique_list=True)
+        unique_counts_port_id_df = self.__calc_profile_feature('vessel_id', 'port_id', self.profiles.primary_prof_port_id, unique_list=True)
+        unique_counts_port_name_df = self.__calc_profile_feature('vessel_id', 'port_name', self.profiles.primary_prof_port_name, unique_list=True)
+
+
 
     def __calc_profile_feature(self, key_col: str, groupby_col: str, primary_profile_dict: dict, unique_list: bool = False) -> pd.DataFrame:
         """
@@ -131,9 +137,10 @@ class DatasetAndFeatures:
         # Count per vessel, how much pos/neg/total visits it had by the list of all [groupby_col] it visited (country, port, etc).
         records = [self.profiles.sum_pos_neg_total_for_list_of_keys(primary_profile_dict, list(list_of_values)) for list_of_values in primary_vs_list_of_values[groupby_col].values]
 
-        # primary_vs_list_of_values[summary_col_names] = pd.DataFrame.from_records(records)  # values unpacking in order: #Pos, #Neg, #Total
-        # pd.DataFrame.from_records(data, columns =['Team', 'Age', 'Score'])
-        return pd.DataFrame.from_records(records, columns=summary_col_names)  # values unpacking in order: #Pos, #Neg, #Total
+        records_as_df = pd.DataFrame.from_records(records, columns=summary_col_names)  # values unpacking in order: #Pos, #Neg, #Total
+        # adding vessel-id information
+        records_as_df.insert(0, 'vessel_id', primary_vs_list_of_values['vessel_id'])
+        return records_as_df
 
     def __add_end_time(self):
         """
