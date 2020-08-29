@@ -62,7 +62,8 @@ class DatasetAndFeatures:
 
     @staticmethod
     def __calc_haversine_distance_vectorized(lon1, lat1, lon2, lat2) -> float:
-        lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+        # lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+        lat1, lon1, lat2, lon2 = np.radians([lat1, lon1, lat2, lon2])
 
         newlon = lon2 - lon1
         newlat = lat2 - lat1
@@ -78,16 +79,16 @@ class DatasetAndFeatures:
         :return: Warp 9. Engage.
         """
         default_val = 0
-        self.df['end_time_prev'] = self.df.groupby('vessel_id')['end_time'].shift()
+        # self.df['end_time_prev'] = self.df.groupby('vessel_id')['end_time'].shift()
         self.df['end_time_prev'] = self.df.groupby('vessel_id')['end_time'].shift()
         self.df['Long_prev'] = self.df.groupby('vessel_id')['Long'].shift()
         self.df['Lat_prev'] = self.df.groupby('vessel_id')['Lat'].shift()
 
-        self.df['distance'] = 0
+        self.df['distance_km'] = 0
         self.df['travel_time_hours'] = 0
-        cond = ~self.df['Long_prev'].isna()
+        cond = ~self.df['end_time_prev'].isna()
         self.df.loc[cond, 'distance_km'] = self.__calc_haversine_distance_vectorized(self.df.loc[cond, 'Long'].values, self.df.loc[cond, 'Lat'].values,
-                                                                                  self.df.loc[cond, 'Long_prev'].values, self.df.loc[cond, 'Lat_prev'].values)
+                                                                                     self.df.loc[cond, 'Long_prev'].values, self.df.loc[cond, 'Lat_prev'].values)
 
         self.df.loc[cond, 'travel_time_hours'] = (self.df.loc[cond, 'start_time'] - self.df.loc[cond, 'end_time_prev']).astype('timedelta64[h]')
         self.df[self.df.loc[:, 'travel_time_hours'] < 0]
@@ -97,7 +98,8 @@ class DatasetAndFeatures:
 
         self.df.loc[self.df['vessel_id'] == '56db7083e4b0a9ba750395d2', :]
         # self.df.loc[self.df['vessel_id'] == '56db88d3e4b006198d26506b', :].to_csv('E:/development/blah.csv', index=False)
-        self.df.loc[self.df['vessel_id'] == '56db88d3e4b006198d26506b', :]
+        cols_to_inspect = ['Long', 'Lat', 'Long_prev', 'Lat_prev', 'port_name', 'end_time_prev', 'start_time', 'travel_time_hours', 'distance_km']
+        self.df.loc[self.df['vessel_id'] == '56db88d3e4b006198d26506b', cols_to_inspect]
 
 
 if __name__ == '__main__':
