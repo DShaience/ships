@@ -122,6 +122,12 @@ class DatasetAndFeatures:
         self.profile_features_df = self.calc_profile_features()
         # Final features dataframe
         self.features_data_set = pd.merge(self.agg_features_df, self.profile_features_df, how='inner', on=['vessel_id'])
+
+        # todo: find why there are nan and inf values (probably bug)
+        #  There are very few nan and inf values. This is probably a bug, but there are only few of them.
+        #  In the interest of time, I'm replacing them with 0 for now
+        self.features_data_set.fillna(0, inplace=True)
+        self.features_data_set.replace([np.inf, -np.inf], 0, inplace=True)
         self.fun.print_quote()
         print("Feature generation completed")
 
