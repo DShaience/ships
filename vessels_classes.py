@@ -5,42 +5,6 @@ import numpy as np
 import pandas as pd
 
 
-class Quotes(object):
-    """
-    Quotes class as singleton ensures that I can print silly quotes throughout the code
-    """
-    __instance = None
-
-    def __new__(cls, quotes_path: str = None):
-        if cls.__instance is None:
-            cls.__instance = super(Quotes, cls).__new__(cls)
-            cls.__instance.__initialized = False
-        return cls.__instance
-
-    def __init__(self, quotes_path: str = None):
-        if self.__initialized:
-            return
-        self.__initialized = True
-
-        self.quotes = pd.read_csv(quotes_path)
-        self.randomState = np.random.RandomState()
-
-    def get_quote(self) -> Tuple[str, str]:
-        i = self.randomState.randint(0, len(self.quotes), 1)
-        author = self.quotes.loc[i, 'author'].values[0]
-        quote = self.quotes.loc[i, 'quote'].values[0]
-        return author, quote
-
-    def print_quote(self, add_message: str = ''):
-        author, quote = self.get_quote()
-        msg = f"\n\"{quote}\", -{author}\n"
-        wrapper = '='*(len(msg) + 8)
-        if add_message != '':
-            print(f"\n{wrapper}\n{add_message}\n\t\"{quote}\", -{author}\n{wrapper}\n")
-        else:
-            print(f"\n{wrapper}\n\"{quote}\", -{author}\n{wrapper}\n")
-
-
 class ProfilesCounter:
     """
     This class calculates and holds various entity profiles. For example self.primary_prof_port_id is a dictionary
@@ -289,3 +253,39 @@ class DatasetAndFeatures:
         self.df.loc[post_shift_cond, 'travel_velocity_kph'] = self.df.loc[post_shift_cond, 'distance_km'] / self.df.loc[post_shift_cond, 'travel_time_hours']
 
         return ['distance_km', 'travel_time_hours', 'travel_velocity_kph']
+
+
+class Quotes(object):
+    """
+    Quotes class as singleton ensures that I can print silly quotes throughout the code
+    """
+    __instance = None
+
+    def __new__(cls, quotes_path: str = None):
+        if cls.__instance is None:
+            cls.__instance = super(Quotes, cls).__new__(cls)
+            cls.__instance.__initialized = False
+        return cls.__instance
+
+    def __init__(self, quotes_path: str = None):
+        if self.__initialized:
+            return
+        self.__initialized = True
+
+        self.quotes = pd.read_csv(quotes_path)
+        self.randomState = np.random.RandomState()
+
+    def get_quote(self) -> Tuple[str, str]:
+        i = self.randomState.randint(0, len(self.quotes), 1)
+        author = self.quotes.loc[i, 'author'].values[0]
+        quote = self.quotes.loc[i, 'quote'].values[0]
+        return author, quote
+
+    def print_quote(self, add_message: str = ''):
+        author, quote = self.get_quote()
+        msg = f"\n\"{quote}\", -{author}\n"
+        wrapper = '='*(len(msg) + 8)
+        if add_message != '':
+            print(f"\n{wrapper}\n{add_message}\n\t\"{quote}\", -{author}\n{wrapper}\n")
+        else:
+            print(f"\n{wrapper}\n\"{quote}\", -{author}\n{wrapper}\n")
