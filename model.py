@@ -60,18 +60,15 @@ def get_model_and_tuned_params(model_name: str):
 
 
 if __name__ == '__main__':
-    print("Loading train and test feature objects")
-
     path_train_features_obj = r'data/train_features_obj.p'
     path_test_features_obj = r'data/test_features_obj.p'
 
-    _, df_vessels_label_train, _, _ = load_vessels_dataset()
-
-    print("Creating features from datasets")
+    print("Creating and loading features from datasets")
     train_dataset_obj, test_dataset_obj = feature_generation_main()
+    _, df_vessels_label_train, _, _ = load_vessels_dataset()
     pickle.dump(train_dataset_obj, open(path_train_features_obj, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
     pickle.dump(test_dataset_obj, open(path_test_features_obj, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-    fun = Quotes('data/quotes.csv')
+    fun = Quotes()
     fun.print_quote("Finished creating features")
 
     train_features_with_label = pd.merge(train_dataset_obj.features_data_set, df_vessels_label_train[['vessel_id', 'label']], how='inner', on='vessel_id')
@@ -145,7 +142,6 @@ if __name__ == '__main__':
 
     """
     Appendices
-
     ================================================
     Appendix A - Feature Importance
     ================================================
