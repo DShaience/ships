@@ -5,10 +5,9 @@ from typing import Tuple
 
 
 def feature_generation_main() -> Tuple[DatasetAndFeatures, DatasetAndFeatures]:
+    df_port_visits_train, df_vessels_label_train, df_port_visits_test, df_vessels_to_label = load_vessels_dataset()
     fun = Quotes('data/quotes.csv')
     fun.print_quote()
-    df_port_visits_train, df_vessels_label_train, df_port_visits_test, df_vessels_to_label = load_vessels_dataset()
-    # df_port_visits_train, df_vessels_label_train, _, _ = load_vessels_dataset()  # to avoid using unfortunate typos for now
 
     # Adding label
     df_port_visits_train_merge = pd.merge(df_port_visits_train, df_vessels_label_train, how='left', left_on='vessel_id', right_on='vessel_id')
